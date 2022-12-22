@@ -1,4 +1,8 @@
 library(haven)
+library(lme4)
+library(nlme)
+library(multilevel)
+library(beepr)
 
 data_raw = haven::read_sav("ESS9e03_1.sav")
 
@@ -9,8 +13,8 @@ data_raw = haven::read_sav("ESS9e03_1.sav")
 
 # Only 24 of 27 EU members represented: Greece, Malta, and Romania are missing
 data = data_raw[!data_raw$cntry %in% c("CH", "GB", "IS", "ME", "NO", "RS"),]
-data = data[, c("cntry", "vteurmmb", "agea", "imbgeco", "psppsgva", "hincfel", "atchctr",
-                "brncntr", "eisced")]
+data = data[, c("cntry", "vteurmmb", "imbgeco", "psppsgva", "hincfel", "trstun",
+                "atchctr", "brncntr", "eisced")]
 
 # Manually create dataframe with country-level data:
 # Money spent on and received from the EU budget in 2018, as % of GNI
@@ -27,13 +31,14 @@ cntry_df$cntry_diff = cntry_df$cntry_received - cntry_df$cntry_spent
 data = merge(data, cntry_df, by="cntry")
 
 # drop missing values
+# Estonia gets dropped entirely due to no DV values
 cases_before = length(data$vteurmmb)
 data = data[(data$vteurmmb == 1 | data$vteurmmb == 2),]
 data = data[!is.na(data$vteurmmb),]
-data = data[!is.na(data$agea),]
 data = data[!is.na(data$imbgeco),]
 data = data[!is.na(data$psppsgva),]
 data = data[!is.na(data$hincfel),]
+data = data[!is.na(data$trstun),]
 data = data[!is.na(data$atchctr),]
 data = data[!is.na(data$brncntr),]
 data = data[!is.na(data$eisced),]
@@ -51,11 +56,12 @@ data[data$brncntr == 2, "brncntr"] = 0
 # table(data$cntry)
 
 # Rename columns
-names(data)[names(data) == "vteurmmb"] = "EUexit"
+names(data)[names(data) == "vteurmmb"] = "EU_exit"
 names(data)[names(data) ==  "agea"] = "age"
 names(data)[names(data) == "imbgeco"] = "immigrants_eco"
 names(data)[names(data) ==  "psppsgva"] = "say_in_politics"
 names(data)[names(data) == "hincfel"] = "econ_difficulty"
+names(data)[names(data) == "trstun"] = "trust_UN"
 names(data)[names(data) == "atchctr"] = "attachment_cntry"
 names(data)[names(data) == "brncntr"] = "born_cntry"
 names(data)[names(data) == "eisced"] = "education"
@@ -68,3 +74,24 @@ for(var in colnames(data)[names(data) != "cntry"]){
   print(var)
   print(sd(data[[var]]))
 }
+
+# Game on
+
+rm(cntry, cntry_spent, cntry_received, diff)
+
+attach(data)
+
+# Intraclass correlation coefficient
+multilevel::ICC1(aov(EUexit ~ cntry, data))
+
+# Model
+model_diff = lme4::glmer(EUexit ~ immigrants_eco + say_in_politics + econ_difficulty + trust_UN +
+                     attachment_cntry + born_cntry + education + cntry_diff + (1 | cntry),
+                     data, binomial("logit"))
+beepr::beep(3)
+summary(model_diff)
+
+
+model_test = lme4::glmer(EUexit ~ immigrants_eco + say_in_politics + econ_difficulty +
+                           attachment_cntry + born_cntry + education + cntry_diff + (1 | cntry),
+                         data, binomial("logit"))
