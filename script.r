@@ -49,3 +49,22 @@ data[data$brncntr == 2, "brncntr"] = 0
 
 # summary(data)
 # table(data$cntry)
+
+# Rename columns
+names(data)[names(data) == "vteurmmb"] = "EUexit"
+names(data)[names(data) ==  "agea"] = "age"
+names(data)[names(data) == "imbgeco"] = "immigrants_eco"
+names(data)[names(data) ==  "psppsgva"] = "say_in_politics"
+names(data)[names(data) == "hincfel"] = "econ_difficulty"
+names(data)[names(data) == "atchctr"] = "attachment_cntry"
+names(data)[names(data) == "brncntr"] = "born_cntry"
+names(data)[names(data) == "eisced"] = "education"
+
+# Descriptives
+summary(data)
+table(data$cntry)
+
+for(var in colnames(data)[names(data) != "cntry"]){
+  print(var)
+  print(sd(data[[var]]))
+}
