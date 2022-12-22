@@ -90,8 +90,3 @@ model_diff = lme4::glmer(EUexit ~ immigrants_eco + say_in_politics + econ_diffic
                      data, binomial("logit"))
 beepr::beep(3)
 summary(model_diff)
-
-
-model_test = lme4::glmer(EUexit ~ immigrants_eco + say_in_politics + econ_difficulty +
-                           attachment_cntry + born_cntry + education + cntry_diff + (1 | cntry),
-                         data, binomial("logit"))
