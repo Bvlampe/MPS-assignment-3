@@ -4,6 +4,7 @@ library(nlme)
 library(multilevel)
 library(beepr)
 library(car)
+library(lattice)
 
 data_raw = haven::read_sav("ESS9e03_1.sav")
 
@@ -76,11 +77,17 @@ for(var in colnames(data)[names(data) != "cntry"]){
   print(sd(data[[var]]))
 }
 
+for(country in cntry){
+  print(country)
+  print(mean(data[data$cntry == country, "EU_exit"]))
+}
+
 # Game on
 
 rm(cntry, cntry_spent, cntry_received, diff)
 
 attach(data)
+
 
 # Intraclass correlation coefficient
 multilevel::ICC1(aov(EU_exit ~ cntry, data))
@@ -107,9 +114,24 @@ error.base <- 100 * (min(mean(EU_exit),(1-mean(EU_exit)))); error.base
 error.model <- 100 * (1-mean(model.pred==EU_exit)); error.model
 error.reduction <- 100 * ((error.base - error.model) / error.base); error.reduction
 
+# Averaged value prediction model (only one left to declutter script)
+b = model@beta
+# Lower expected probability:
+LEP <- plogis(b[1] + b[2]*mean(econ_difficulty) + b[3]*mean(immigrants_eco) + b[4]*mean(say_in_politics) +
+                b[5]*mean(trust_UN) + b[6]*mean(attachment_cntry) + b[7]*mean(born_cntry) +
+                b[8]*mean(education) + b[9]*min(cntry_diff))
 
+# Upper expected probability:
+UEP <- plogis(b[1] + b[2]*max(econ_difficulty) + b[3]*mean(immigrants_eco) + b[4]*mean(say_in_politics) +
+                b[5]*mean(trust_UN) + b[6]*mean(attachment_cntry) + b[7]*mean(born_cntry) +
+                b[8]*mean(education) + b[9]*max(cntry_diff))
+
+# First difference (percentage points):
+cat("LEP:", round(LEP*100, 2), "% | UEP:", round(UEP*100, 2), "% | First difference:", 
+    round((UEP-LEP)*100,2), "percentage points\n")
 
 
 # Assumption checks
 
 car::vif(model)
+plot(model)
