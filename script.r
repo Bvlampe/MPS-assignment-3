@@ -82,11 +82,17 @@ rm(cntry, cntry_spent, cntry_received, diff)
 attach(data)
 
 # Intraclass correlation coefficient
-multilevel::ICC1(aov(EUexit ~ cntry, data))
+multilevel::ICC1(aov(EU_exit ~ cntry, data))
 
 # Model
-model_diff = lme4::glmer(EUexit ~ immigrants_eco + say_in_politics + econ_difficulty + trust_UN +
+model_diff = lme4::glmer(EU_exit ~ immigrants_eco + say_in_politics + econ_difficulty + trust_UN +
                      attachment_cntry + born_cntry + education + cntry_diff + (1 | cntry),
                      data, binomial("logit"))
 beepr::beep(3)
 summary(model_diff)
+
+model_spend = lme4::glmer(EU_exit ~ immigrants_eco + say_in_politics + econ_difficulty + trust_UN +
+                     attachment_cntry + born_cntry + education + cntry_spent + (1 | cntry),
+                     data, binomial("logit"))
+beepr::beep(3)
+summary(model_spend)
