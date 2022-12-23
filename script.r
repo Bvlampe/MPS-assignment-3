@@ -3,6 +3,7 @@ library(lme4)
 library(nlme)
 library(multilevel)
 library(beepr)
+library(car)
 
 data_raw = haven::read_sav("ESS9e03_1.sav")
 
@@ -85,14 +86,30 @@ attach(data)
 multilevel::ICC1(aov(EU_exit ~ cntry, data))
 
 # Model
-model_diff = lme4::glmer(EU_exit ~ immigrants_eco + say_in_politics + econ_difficulty + trust_UN +
-                     attachment_cntry + born_cntry + education + cntry_diff + (1 | cntry),
+model = lme4::glmer(EU_exit ~ 1 + econ_difficulty + immigrants_eco + say_in_politics + trust_UN +
+                     attachment_cntry + born_cntry + education + cntry_diff + (1 + econ_difficulty | cntry),
                      data, binomial("logit"))
 beepr::beep(3)
-summary(model_diff)
+summary(model)
 
-model_spend = lme4::glmer(EU_exit ~ immigrants_eco + say_in_politics + econ_difficulty + trust_UN +
-                     attachment_cntry + born_cntry + education + cntry_spent + (1 | cntry),
-                     data, binomial("logit"))
-beepr::beep(3)
-summary(model_spend)
+# Interpretation
+
+# estimated selection probability
+model.prob=predict(model,type="response")
+# dichotomize using 0.5 as cut-off
+model.pred=ifelse(model.prob>0.5,1,0)
+# table of predicted and observed selections
+table(model.pred,EU_exit)
+# average of correct predictions
+mean(model.pred==EU_exit)
+# Reduction of Prediction Error
+error.base <- 100 * (min(mean(EU_exit),(1-mean(EU_exit)))); error.base
+error.model <- 100 * (1-mean(model.pred==EU_exit)); error.model
+error.reduction <- 100 * ((error.base - error.model) / error.base); error.reduction
+
+
+
+
+# Assumption checks
+
+car::vif(model)
